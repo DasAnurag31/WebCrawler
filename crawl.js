@@ -1,26 +1,43 @@
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 
-const crawlPage = async (currentURL) => {
+const crawlPage = async (origin, currentURL, pages) => {
+    const originURLobj = new URL(origin);
+    const currentURLobj = new URL(currentURL);
+    const normalizedCurrentURL = normaliseURL(currentURL);
+
+    if (originURLobj.hostname != currentURLobj.hostname) {
+        return pages;
+    }
+
+    if (pages[normalizedCurrentURL] > 0) {
+        pages[normalizedCurrentURL]++;
+        return pages;
+    }
+    pages[normalizedCurrentURL] = 1;
     console.log("Actively crawling " + currentURL);
     try {
         const response = await fetch(currentURL);
-
         if (response.status > 399) {
             console.log(`Error with fetching data status code: ${response.status} in page ${currentURL}`);
-            return
+            return pages;
         }
 
         const contentType = response.headers.get('content-type');
         if (!contentType.includes('text/html')) {
             console.log(`Error with content type type: ${contentType} in page ${currentURL}`);
-            return
+            return pages;
         }
-        
-        console.log(await response.text());
+        const htmlContent = await response.text();
+        const URLlist = getURLsFromHTML(htmlContent, origin);
+
+        for (const url of URLlist) {
+            pages = await crawlPage(origin, url, pages);
+        }
+        return pages;
     }
     catch (err) {
-        console.log("Error with fetching " + err.message);
+        console.log("Error with fetching " + err);
     }
 }
 
@@ -61,7 +78,7 @@ const getURLsFromHTML = (htmlString, baseURL) => {
             console.log("There happens to be an" + err.message);
         }
     }
-    return urls[0];
+    return urls;
 }
 
 module.exports = {
