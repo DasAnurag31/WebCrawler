@@ -30,3 +30,11 @@ test("Testing html url extraction from relative paths", () => {
     const expected = "https://blog.boot.dev/path/";
     expect(output).toEqual(expected);
 })
+
+test("Testing invalid url formats in html", () => {
+    const input = `<html>< body ><a href="invalid path"><span>Go to Boot.dev</span></a></ ></html >`;
+    const baseURL = `https://blog.boot.dev`;
+    const output = getURLsFromHTML(input, baseURL);
+    const expected = undefined;
+    expect(output).toEqual(expected);
+})
